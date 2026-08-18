@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuestionario de Requerimientos — Plataforma de Asesorías en Seguridad Privada</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --brand:#1F3A5F;
+    --brand-dark:#122540;
+    --accent:#C9A96E;
+    --bg:#F5F7FA;
+    --card:#ffffff;
+    --text:#1a2332;
+    --muted:#6b7280;
+    --border:#e2e8f0;
+    --success:#16a34a;
+  }
+  *{box-sizing:border-box}
+  html,body{scroll-behavior:smooth}
+  body{
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.55;
+    padding-bottom:120px;
+  }
+  /* HEADER */
+  .app-header{
+    background:linear-gradient(135deg,var(--brand) 0%,var(--brand-dark) 100%);
+    color:#fff;
+    padding:2.2rem 1rem 3.6rem;
+    position:relative;
+    overflow:hidden;
+  }
+  .app-header::after{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:6px;
+    background:linear-gradient(90deg,var(--accent) 0%, #e6cb8f 50%, var(--accent) 100%);
+  }
+  .app-header .container{max-width:960px;position:relative;z-index:2}
+  .brand-badge{
+    display:inline-flex;align-items:center;gap:.55rem;
+    background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.25);
+    padding:.35rem .8rem;border-radius:999px;
+    font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;font-weight:600;
+    margin-bottom:1rem;
+  }
+  .brand-badge i{color:var(--accent)}
+  .app-header h1{font-weight:800;font-size:clamp(1.5rem,3.4vw,2.2rem);margin:0 0 .35rem;letter-spacing:-.02em}
+  .app-header p{margin:0;opacity:.85;font-size:1.02rem;max-width:640px}
+
+  /* PROGRESS */
+  .progress-wrap{
+    max-width:960px;margin:-2.2rem auto 1.5rem;padding:1rem 1.25rem;
+    background:var(--card);border-radius:14px;
+    box-shadow:0 8px 24px rgba(31,58,95,.10);
+    border:1px solid var(--border);
+    position:relative;z-index:3;
+  }
+  .progress-wrap .label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--muted);margin-bottom:.4rem;font-weight:600}
+  .progress-wrap .label b{color:var(--brand)}
+  .progress{height:10px;border-radius:999px;background:#e6edf5}
+  .progress-bar{background:linear-gradient(90deg,var(--brand) 0%,var(--accent) 100%);transition:width .35s ease}
+
+  /* MAIN */
+  main{max-width:960px;margin:0 auto;padding:0 1rem}
+  .section-card{
+    background:var(--card);
+    border-radius:14px;
+    padding:1.6rem 1.7rem;
+    margin-bottom:1.2rem;
+    border:1px solid var(--border);
+    box-shadow:0 2px 10px rgba(18,37,64,.04);
+    scroll-margin-top:20px;
+  }
+  .section-head{
+    display:flex;align-items:center;gap:.85rem;margin-bottom:1.25rem;padding-bottom:.85rem;
+    border-bottom:2px solid var(--brand);
+  }
+  .section-num{
+    width:38px;height:38px;flex:0 0 38px;border-radius:10px;
+    background:linear-gradient(135deg,var(--brand),var(--brand-dark));
+    color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;
+    font-size:1rem;
+  }
+  .section-title{margin:0;font-weight:700;color:var(--brand);font-size:1.18rem;letter-spacing:-.01em}
+  .section-subtitle{color:var(--muted);font-size:.85rem;margin-top:.1rem}
+
+  /* QUESTIONS */
+  .q{margin-bottom:1.35rem;padding-bottom:1.1rem;border-bottom:1px dashed #e8eef5}
+  .q:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+  .q-label{display:flex;gap:.5rem;font-weight:600;color:var(--text);margin-bottom:.55rem;line-height:1.4;font-size:.98rem}
+  .q-num{color:var(--brand);font-weight:800;flex:0 0 auto}
+  .q-required{color:#dc2626;margin-left:.15rem;font-weight:700}
+  .q-hint{display:block;font-weight:400;color:var(--muted);font-size:.82rem;margin-top:.15rem}
+
+  .form-control,.form-select{
+    border-radius:8px;border:1.5px solid var(--border);
+    padding:.55rem .8rem;font-size:.95rem;
+    transition:all .18s;
+  }
+  .form-control:focus,.form-select:focus{
+    border-color:var(--brand);box-shadow:0 0 0 3px rgba(31,58,95,.12);
+  }
+  textarea.form-control{min-height:80px;resize:vertical}
+
+  /* Radio & Check styled */
+  .opts{display:grid;gap:.4rem}
+  .opt{
+    display:flex;align-items:flex-start;gap:.65rem;
+    padding:.55rem .8rem;border-radius:8px;
+    border:1.5px solid var(--border);cursor:pointer;
+    transition:all .15s;font-size:.92rem;background:#fafbfd;
+  }
+  .opt:hover{border-color:var(--brand);background:#f0f4fa}
+  .opt input{margin-top:.2rem;accent-color:var(--brand);flex:0 0 auto}
+  .opt input:checked ~ span{color:var(--brand);font-weight:600}
+  .opt:has(input:checked){border-color:var(--brand);background:#eef3fb}
+
+  .opts-horizontal{display:flex;flex-wrap:wrap;gap:.5rem}
+  .opts-horizontal .opt{flex:0 1 auto}
+
+  /* Scale 1-5 */
+  .scale-row{
+    display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:center;
+    padding:.7rem 0;border-bottom:1px dashed #eef2f7;
+  }
+  .scale-row:last-child{border-bottom:none}
+  .scale-label{font-size:.92rem}
+  .scale-opts{display:flex;gap:.35rem}
+  .scale-opts label{
+    width:34px;height:34px;border-radius:8px;border:1.5px solid var(--border);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    font-weight:700;font-size:.85rem;color:var(--muted);transition:all .15s;
+    background:#fafbfd;
+  }
+  .scale-opts label:hover{border-color:var(--brand);color:var(--brand)}
+  .scale-opts input{display:none}
+  .scale-opts input:checked + label{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+  /* Legend */
+  .scale-legend{
+    display:flex;justify-content:space-between;
+    color:var(--muted);font-size:.78rem;margin-bottom:.6rem;font-style:italic;
+  }
+
+  /* File */
+  input[type=file]{padding:.4rem;background:#fafbfd}
+
+  /* Actions bar (sticky) */
+  .action-bar{
+    position:fixed;left:0;right:0;bottom:0;
+    background:rgba(255,255,255,.96);backdrop-filter:blur(10px);
+    border-top:1px solid var(--border);
+    padding:.85rem 1rem;z-index:100;
+    box-shadow:0 -4px 20px rgba(31,58,95,.08);
+  }
+  .action-bar .container{max-width:960px;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+  .action-bar .spacer{flex:1}
+  .btn-brand{
+    background:linear-gradient(135deg,var(--brand),var(--brand-dark));
+    color:#fff;border:none;font-weight:600;padding:.65rem 1.4rem;border-radius:8px;
+    display:inline-flex;align-items:center;gap:.5rem;
+    transition:transform .15s;
+  }
+  .btn-brand:hover{transform:translateY(-1px);color:#fff;box-shadow:0 6px 18px rgba(31,58,95,.28)}
+  .btn-outline-brand{border:1.5px solid var(--brand);color:var(--brand);background:#fff;font-weight:600;padding:.6rem 1.1rem;border-radius:8px}
+  .btn-outline-brand:hover{background:var(--brand);color:#fff}
+  .btn-ghost{background:transparent;border:none;color:var(--muted);font-weight:500;padding:.6rem .9rem}
+  .btn-ghost:hover{color:#dc2626}
+
+  /* Section nav (side, desktop) */
+  .side-nav{
+    position:fixed;top:120px;left:20px;width:200px;
+    background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:.9rem;box-shadow:0 4px 14px rgba(0,0,0,.06);
+    max-height:calc(100vh - 200px);overflow-y:auto;
+    display:none;
+  }
+  @media(min-width:1280px){.side-nav{display:block}}
+  .side-nav h6{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 .5rem}
+  .side-nav a{
+    display:flex;align-items:center;gap:.5rem;padding:.35rem .5rem;border-radius:6px;
+    color:var(--text);font-size:.82rem;text-decoration:none;margin-bottom:.15rem;
+  }
+  .side-nav a:hover{background:#f0f4fa;color:var(--brand)}
+  .side-nav a.done::before{content:"✓";color:var(--success);font-weight:800}
+  .side-nav a::before{content:"○";color:var(--border);flex:0 0 auto;font-size:.7rem}
+
+  /* Alert */
+  .info-note{
+    background:#fef7e6;border-left:4px solid var(--accent);
+    padding:.85rem 1rem;border-radius:6px;font-size:.88rem;color:#5a4620;margin-bottom:1.5rem;
+  }
+  .info-note i{color:var(--accent);margin-right:.4rem}
+
+  /* Toast */
+  .toast-msg{
+    position:fixed;top:20px;right:20px;z-index:200;
+    background:var(--success);color:#fff;padding:.85rem 1.2rem;border-radius:10px;
+    font-weight:600;box-shadow:0 8px 20px rgba(22,163,74,.28);
+    opacity:0;transform:translateY(-10px);transition:all .3s;
+  }
+  .toast-msg.show{opacity:1;transform:translateY(0)}
+
+  @media(max-width:576px){
+    .app-header{padding:1.8rem 1rem 3rem}
+    .section-card{padding:1.2rem 1rem}
+    .section-head{gap:.6rem}
+    .side-nav{display:none !important}
+    .action-bar .container{justify-content:center}
+    .btn-brand,.btn-outline-brand{width:100%;justify-content:center}
+    .action-bar .spacer{display:none}
+  }
+
+  /* Print (fallback) */
+  @media print{
+    .app-header,.action-bar,.side-nav,.progress-wrap{display:none !important}
+    .section-card{box-shadow:none;border:1px solid #ddd;page-break-inside:avoid}
+    body{background:#fff;padding:0}
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="container">
+    <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i> Cuestionario Oficial</div>
+    <h1>Levantamiento de Requerimientos</h1>
+    <p>Plataforma web de asesorías en Seguridad Privada. Complete el formulario y descargue el PDF con sus respuestas para enviarlo formalmente.</p>
+  </div>
+</header>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="label">
+    <span>Progreso de la encuesta</span>
+    <span><b id="progPct">0%</b> · <span id="progCount">0/49</span> preguntas</span>
+  </div>
+  <div class="progress"><div class="progress-bar" id="progBar" style="width:0%"></div></div>
+</div>
+
+<!-- SIDE NAV (desktop) -->
+<nav class="side-nav" id="sideNav">
+  <h6>Secciones</h6>
+</nav>
+
+<main>
+
+  <div class="info-note">
+    <i class="fa-solid fa-circle-info"></i>
+    <b>Antes de comenzar:</b> El tiempo estimado es de 15 minutos. Los archivos adjuntos (logo, catálogos) deberán enviarse por separado — este formulario solo registra que se van a entregar.
+  </div>
+
+  <!-- ============== SECCIONES ============== -->
+  <div id="formRoot"></div>
+
+</main>
+
+<!-- ACTION BAR -->
+<div class="action-bar">
+  <div class="container">
+    <button class="btn-ghost" onclick="if(confirm('¿Limpiar todas las respuestas?')) location.reload()">
+      <i class="fa-solid fa-rotate-left"></i> Limpiar
+    </button>
+    <div class="spacer"></div>
+    <button class="btn-outline-brand" onclick="window.print()">
+      <i class="fa-solid fa-print"></i> Imprimir
+    </button>
+    <button class="btn-brand" onclick="generarPDF()">
+      <i class="fa-solid fa-file-pdf"></i> Descargar PDF
+    </button>
+  </div>
+</div>
+
+<div class="toast-msg" id="toast"></div>
+
+<script>
+// ============================================================
+// DEFINICIÓN DEL CUESTIONARIO
+// ============================================================
+const SECCIONES = [
+  {
+    title: "Empresa y responsable",
+    icon: "fa-building",
+    questions: [
+      {id:"q1", type:"text", label:"Razón social, RUT y nombre de fantasía de la empresa."},
+      {id:"q2", type:"textarea", label:"Nombre, cargo, correo y teléfono del responsable del proyecto (contraparte técnica)."},
+      {id:"q3", type:"radio", label:"¿La empresa cuenta con autorización vigente ante la autoridad fiscalizadora (OS-10 Carabineros / DGTM según corresponda)?",
+        options:["Sí","No","En trámite","No aplica"]},
+      {id:"q4", type:"file", label:"Adjunte logotipo en alta resolución y manual de marca (si lo posee).",
+        hint:"El adjunto se envía junto al PDF por separado."},
+    ]
+  },
+  {
+    title: "Modelo de negocio",
+    icon: "fa-chart-line",
+    questions: [
+      {id:"q5", type:"textarea", label:"Describa la propuesta de valor de su empresa y qué la diferencia de la competencia."},
+      {id:"q6", type:"check", label:"¿Cuál es su cliente objetivo?",
+        options:["Empresas de vigilancia privada","Empresas con guardias propios (Depto. de Seguridad)","Comunidades / condominios","Sector marítimo-portuario","Personas naturales","Instituciones públicas","Otro"]},
+      {id:"q7", type:"textarea", label:"Mencione 2 competidores directos o sitios de referencia (URL)."},
+    ]
+  },
+  {
+    title: "Catálogo de asesorías",
+    icon: "fa-clipboard-list",
+    questions: [
+      {id:"q8", type:"textarea", label:"Liste los tipos de asesorías que se venderán en la plataforma (una por línea).",
+        hint:"Ej: Estudio de Seguridad, Directiva de Funcionamiento, Reglamento Interno, Matriz de Riesgos, etc."},
+      {id:"q9", type:"radio", label:"¿Los precios serán fijos, a cotizar o mixtos?",
+        options:["Todos precio fijo","Todos a cotizar","Mixto"]},
+      {id:"q10", type:"radio", label:"¿Cada asesoría es un entregable digital (PDF), un servicio agendado (reunión/visita) o ambos?",
+        options:["Digital","Agendado","Ambos"]},
+      {id:"q11", type:"text", label:"Plazo típico de entrega de una asesoría."},
+      {id:"q12", type:"radio", label:"¿Ofrecerá planes o paquetes recurrentes (mensual/anual)?",
+        options:["Sí","No","A evaluar"]},
+    ]
+  },
+  {
+    title: "Usuarios y roles",
+    icon: "fa-users",
+    questions: [
+      {id:"q13", type:"check", label:"¿Qué tipos de usuarios tendrá el sistema?",
+        options:["Administrador","Asesor / consultor","Cliente empresa","Cliente persona natural","Vendedor / comercial","Contador (solo reportes)","Soporte"]},
+      {id:"q14", type:"radio", label:"¿El cliente debe registrarse obligatoriamente para comprar o se permite compra como invitado?",
+        options:["Registro obligatorio","Compra como invitado permitida","Ambas opciones"]},
+      {id:"q15", type:"check", label:"¿Qué datos se solicitarán al registrarse?",
+        options:["Nombre / razón social","RUT","Correo","Teléfono","Dirección","Giro","Cargo del contacto","Documento identidad / e-RUT"]},
+    ]
+  },
+  {
+    title: "Flujo de compra y entrega",
+    icon: "fa-cart-shopping",
+    questions: [
+      {id:"q16", type:"textarea", label:"Describa el flujo ideal: desde que el cliente entra a la web hasta que recibe la asesoría."},
+      {id:"q17", type:"check", label:"Tras el pago, el sistema debe:",
+        options:["Entregar el documento automáticamente (descarga PDF)","Enviar correo con link de descarga","Notificar al asesor para contactar al cliente","Generar cita en calendario (Zoom / Meet / presencial)","Emitir boleta o factura electrónica"]},
+      {id:"q18", type:"radio", label:"¿El cliente debe poder ver el estado de su asesoría (en proceso, entregada, revisión)?",
+        options:["Sí","No","A futuro"]},
+    ]
+  },
+  {
+    title: "Medios de pago",
+    icon: "fa-credit-card",
+    questions: [
+      {id:"q19", type:"check", label:"Confirme las pasarelas de pago a integrar:",
+        options:["Mercado Pago","Webpay Plus (Transbank)","Flow","Khipu","Transferencia bancaria con carga de comprobante"]},
+      {id:"q20", type:"textarea", label:"¿Ya cuenta con cuentas activas en dichas pasarelas o hay que crearlas?"},
+      {id:"q21", type:"text", label:"¿Debe emitirse boleta/factura electrónica automáticamente tras el pago? Indique proveedor (SII, Nubox, Bsale, etc.)."},
+      {id:"q22", type:"textarea", label:"Describa la política de reembolsos y anulaciones."},
+    ]
+  },
+  {
+    title: "Cumplimiento legal (Chile)",
+    icon: "fa-gavel",
+    questions: [
+      {id:"q23", type:"radio", label:"¿Autoriza incluir Política de Privacidad ajustada a la Ley 21.719 de Protección de Datos Personales?",
+        options:["Sí","No","Requiere revisión legal previa"]},
+      {id:"q24", type:"radio", label:"¿Cuenta con textos legales propios (Términos y Condiciones, Política de Cookies) o deben ser redactados?",
+        options:["Textos propios","Redactarlos","Mixto"]},
+      {id:"q25", type:"text", label:"¿La empresa tiene encargado de datos personales (DPO) designado? Indique nombre."},
+      {id:"q26", type:"radio", label:"¿La plataforma publicará normativa (Ley 21.659, DS 867, DTO 93, etc.) como material de valor?",
+        options:["Sí","No","A futuro"]},
+    ]
+  },
+  {
+    title: "Diseño y experiencia de usuario",
+    icon: "fa-palette",
+    questions: [
+      {id:"q27", type:"text", label:"Colores corporativos (códigos HEX si los tiene) y tipografía preferida."},
+      {id:"q28", type:"radio", label:"Estilo visual deseado:",
+        options:["Corporativo serio (azules/grises)","Institucional / gubernamental","Minimalista moderno","Alta tecnología / seguridad (oscuro + acentos)","Otro"]},
+      {id:"q29", type:"textarea", label:"Mencione 2 o 3 sitios web que le gusten como referencia."},
+      {id:"q30", type:"radio", label:"¿Debe ser 100% responsive (móvil, tablet, desktop)?",
+        options:["Sí — obligatorio","No"]},
+    ]
+  },
+  {
+    title: "Contenidos y secciones",
+    icon: "fa-layer-group",
+    questions: [
+      {id:"q31", type:"check", label:"Marque las secciones que debe tener la web:",
+        options:["Inicio / Home","Quiénes somos","Catálogo de asesorías + detalle","Carrito y checkout","Área privada del cliente (Mi Cuenta)","Blog / Noticias normativas","Preguntas frecuentes (FAQ)","Contacto / Cotización","Panel de administración"]},
+      {id:"q32", type:"radio", label:"¿Quién generará los contenidos textuales (descripciones, blog, FAQ)?",
+        options:["El cliente","Nosotros (desarrollador)","Mixto"]},
+    ]
+  },
+  {
+    title: "Requisitos no funcionales",
+    icon: "fa-gauge-high",
+    questions: [
+      {id:"q33", type:"text", label:"Volumen estimado de visitas mensuales."},
+      {id:"q34", type:"check", label:"Nivel de seguridad requerido:",
+        options:["HTTPS obligatorio","Doble factor (2FA) en administrador","Cifrado de datos sensibles","Registro de auditoría / logs","Backups diarios automáticos","Protección anti-bots (reCAPTCHA)"]},
+      {id:"q35", type:"radio", label:"¿Necesita reportes exportables en Excel o PDF?",
+        options:["Sí, ambos","Solo Excel","Solo PDF","No"]},
+    ]
+  },
+  {
+    title: "Integraciones",
+    icon: "fa-plug",
+    questions: [
+      {id:"q36", type:"check", label:"Marque las integraciones deseadas:",
+        options:["Google Analytics 4 / Tag Manager","Meta Pixel (Facebook/Instagram Ads)","WhatsApp Business","Correo transaccional (SendGrid / Resend)","CRM (HubSpot, Zoho, Pipedrive)","Firma electrónica","Videoconferencia (Zoom / Meet)"]},
+    ]
+  },
+  {
+    title: "Requisitos técnicos",
+    icon: "fa-code",
+    questions: [
+      {id:"q37", type:"radio", label:"La arquitectura propuesta es: Frontend con Bootstrap desplegado en Netlify + backend con Supabase (PostgreSQL, autenticación, storage) + repositorio en GitHub. ¿Confirma esta stack?",
+        options:["Sí, confirmo","No, propongo otra","A evaluar"]},
+      {id:"q38", type:"text", label:"¿Ya cuenta con dominio comprado? Indíquelo."},
+      {id:"q39", type:"radio", label:"¿Las cuentas de Netlify, Supabase y GitHub estarán a nombre de la empresa o del desarrollador?",
+        options:["A nombre de la empresa","A nombre del desarrollador","Mixto"]},
+      {id:"q40", type:"radio", label:"¿Se entregará código fuente al finalizar el proyecto?",
+        options:["Sí","No","A convenir"]},
+    ]
+  },
+  {
+    title: "Post-venta y soporte",
+    icon: "fa-headset",
+    questions: [
+      {id:"q41", type:"radio", label:"¿Requiere plan de mantención mensual post-lanzamiento?",
+        options:["Sí","No","A evaluar tras el lanzamiento"]},
+      {id:"q42", type:"radio", label:"Nivel de soporte esperado:",
+        options:["Horario hábil (L-V 9-18)","24/7","Solo por tickets"]},
+      {id:"q43", type:"radio", label:"¿Se necesita capacitación al equipo en el uso del panel administrativo?",
+        options:["Sí","No"]},
+    ]
+  },
+  {
+    title: "Plazos y presupuesto",
+    icon: "fa-calendar-days",
+    questions: [
+      {id:"q44", type:"date", label:"Fecha ideal de lanzamiento."},
+      {id:"q45", type:"radio", label:"Rango de presupuesto disponible:",
+        options:["Menos de $1.000.000 CLP","$1.000.000 – $2.500.000","$2.500.000 – $5.000.000","Más de $5.000.000","Prefiero conversarlo"]},
+      {id:"q46", type:"scale", label:"Prioridad de cada función (1 = nada importante, 5 = crítico):",
+        items:["Catálogo de asesorías","Pago online","Facturación electrónica automática","Área privada del cliente","Agendamiento de reuniones","Blog / noticias normativas"]},
+    ]
+  },
+  {
+    title: "Cierre",
+    icon: "fa-flag-checkered",
+    questions: [
+      {id:"q47", type:"textarea", label:"¿Existe algún requerimiento crítico o no negociable que no haya sido consultado?"},
+      {id:"q48", type:"textarea", label:"¿Algún riesgo, restricción o preocupación que debamos considerar?"},
+      {id:"q49", type:"file", label:"Puede adjuntar documentos adicionales (mockups, ejemplos, textos legales, catálogos).",
+        hint:"El adjunto se envía junto al PDF por separado."},
+    ]
+  }
+];
+
+// ============================================================
+// RENDERIZADO
+// ============================================================
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+function renderQuestion(q, num) {
+  let field = "";
+  if (q.type === "text") {
+    field = `<input type="text" class="form-control" id="${q.id}" data-num="${num}">`;
+  } else if (q.type === "textarea") {
+    field = `<textarea class="form-control" id="${q.id}" data-num="${num}" rows="3"></textarea>`;
+  } else if (q.type === "date") {
+    field = `<input type="date" class="form-control" id="${q.id}" data-num="${num}" style="max-width:220px">`;
+  } else if (q.type === "file") {
+    field = `<input type="file" class="form-control" id="${q.id}" data-num="${num}" multiple>`;
+  } else if (q.type === "radio") {
+    field = `<div class="opts">` + q.options.map((o,i)=>`
+      <label class="opt"><input type="radio" name="${q.id}" value="${esc(o)}" data-num="${num}"><span>${esc(o)}</span></label>
+    `).join("") + `</div>`;
+  } else if (q.type === "check") {
+    field = `<div class="opts">` + q.options.map((o,i)=>`
+      <label class="opt"><input type="checkbox" name="${q.id}" value="${esc(o)}" data-num="${num}"><span>${esc(o)}</span></label>
+    `).join("") + `</div>`;
+  } else if (q.type === "scale") {
+    field = `<div class="scale-legend"><span>1 = Nada importante</span><span>5 = Crítico</span></div>` +
+      q.items.map((it,i)=>`
+      <div class="scale-row">
+        <div class="scale-label">${esc(it)}</div>
+        <div class="scale-opts">
+          ${[1,2,3,4,5].map(n=>`
+            <input type="radio" name="${q.id}_${i}" value="${n}" id="${q.id}_${i}_${n}" data-num="${num}">
+            <label for="${q.id}_${i}_${n}">${n}</label>
+          `).join("")}
+        </div>
+      </div>
+    `).join("");
+  }
+  const hint = q.hint ? `<span class="q-hint">${esc(q.hint)}</span>` : "";
+  return `
+    <div class="q" data-qid="${q.id}">
+      <label class="q-label" for="${q.id}"><span class="q-num">${num}.</span><span>${esc(q.label)}${hint}</span></label>
+      ${field}
+    </div>
+  `;
+}
+
+function render() {
+  const root = document.getElementById("formRoot");
+  const nav = document.getElementById("sideNav");
+  let html = "";
+  let navHtml = `<h6>Secciones</h6>`;
+  let counter = 1;
+  SECCIONES.forEach((sec, idx) => {
+    const secId = "sec"+(idx+1);
+    html += `<section class="section-card" id="${secId}" data-sec="${idx+1}">
+      <div class="section-head">
+        <div class="section-num">${idx+1}</div>
+        <div><h2 class="section-title"><i class="fa-solid ${sec.icon}" style="color:var(--accent);margin-right:.4rem"></i>${esc(sec.title)}</h2></div>
+      </div>`;
+    sec.questions.forEach(q => {
+      html += renderQuestion(q, counter++);
+    });
+    html += `</section>`;
+    navHtml += `<a href="#${secId}" data-sec="${idx+1}">${idx+1}. ${esc(sec.title)}</a>`;
+  });
+  root.innerHTML = html;
+  nav.innerHTML = navHtml;
+  attachListeners();
+  updateProgress();
+}
+
+// ============================================================
+// PROGRESO
+// ============================================================
+function isQuestionAnswered(q) {
+  if (q.type === "text" || q.type === "textarea" || q.type === "date") {
+    return document.getElementById(q.id).value.trim() !== "";
+  }
+  if (q.type === "file") {
+    return document.getElementById(q.id).files.length > 0;
+  }
+  if (q.type === "radio") {
+    return document.querySelector(`input[name="${q.id}"]:checked`) !== null;
+  }
+  if (q.type === "check") {
+    return document.querySelectorAll(`input[name="${q.id}"]:checked`).length > 0;
+  }
+  if (q.type === "scale") {
+    return q.items.every((_,i) => document.querySelector(`input[name="${q.id}_${i}"]:checked`) !== null);
+  }
+  return false;
+}
+
+function updateProgress() {
+  const all = SECCIONES.flatMap(s => s.questions);
+  const done = all.filter(isQuestionAnswered).length;
+  const pct = Math.round((done / all.length) * 100);
+  document.getElementById("progBar").style.width = pct + "%";
+  document.getElementById("progPct").textContent = pct + "%";
+  document.getElementById("progCount").textContent = `${done}/${all.length}`;
+  // side nav done marks
+  SECCIONES.forEach((sec, idx) => {
+    const allDone = sec.questions.every(isQuestionAnswered);
+    const link = document.querySelector(`.side-nav a[data-sec="${idx+1}"]`);
+    if (link) link.classList.toggle("done", allDone);
+  });
+}
+
+function attachListeners() {
+  document.querySelectorAll("input, textarea, select").forEach(el => {
+    el.addEventListener("input", updateProgress);
+    el.addEventListener("change", updateProgress);
+  });
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function toast(msg, color) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  if (color) t.style.background = color;
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 2600);
+}
+
+// ============================================================
+// PDF (con jsPDF)
+// ============================================================
+function collectAnswers() {
+  const out = [];
+  let n = 1;
+  SECCIONES.forEach(sec => {
+    const secQuestions = [];
+    sec.questions.forEach(q => {
+      let ans = "";
+      if (q.type === "text" || q.type === "textarea" || q.type === "date") {
+        ans = document.getElementById(q.id).value.trim();
+      } else if (q.type === "file") {
+        const files = document.getElementById(q.id).files;
+        ans = files.length > 0 ? `[Adjuntará ${files.length} archivo(s): ${Array.from(files).map(f=>f.name).join(", ")}]` : "";
+      } else if (q.type === "radio") {
+        const el = document.querySelector(`input[name="${q.id}"]:checked`);
+        ans = el ? el.value : "";
+      } else if (q.type === "check") {
+        const els = document.querySelectorAll(`input[name="${q.id}"]:checked`);
+        ans = Array.from(els).map(e=>"• "+e.value).join("\n");
+      } else if (q.type === "scale") {
+        ans = q.items.map((it,i) => {
+          const sel = document.querySelector(`input[name="${q.id}_${i}"]:checked`);
+          return `• ${it}: ${sel ? sel.value+"/5" : "—"}`;
+        }).join("\n");
+      }
+      secQuestions.push({num:n++, label:q.label, ans: ans || "— Sin responder —", empty: !ans});
+    });
+    out.push({title: sec.title, questions: secQuestions});
+  });
+  return out;
+}
+
+function generarPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:"pt", format:"letter"});
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  const M = 50; // margin
+  const CW = W - 2*M;
+
+  // Colors
+  const BRAND = [31, 58, 95];
+  const ACCENT = [201, 169, 110];
+  const MUTED = [107, 114, 128];
+  const DARK = [26, 35, 50];
+
+  // ============ PORTADA ============
+  doc.setFillColor(...BRAND);
+  doc.rect(0, 0, W, 180, "F");
+  doc.setFillColor(...ACCENT);
+  doc.rect(0, 175, W, 5, "F");
+
+  doc.setTextColor(255,255,255);
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(11);
+  doc.text("CUESTIONARIO DE REQUERIMIENTOS", W/2, 65, {align:"center"});
+  doc.setFontSize(22);
+  doc.text("Plataforma web de asesorías", W/2, 100, {align:"center"});
+  doc.text("en Seguridad Privada", W/2, 128, {align:"center"});
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(10);
+  doc.text("Respuestas del cliente", W/2, 155, {align:"center"});
+
+  // Meta info
+  let y = 230;
+  doc.setTextColor(...DARK);
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(12);
+  doc.text("Información general", M, y);
+  y += 6;
+  doc.setDrawColor(...BRAND);
+  doc.setLineWidth(1.2);
+  doc.line(M, y, W-M, y);
+  y += 20;
+
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(10);
+  doc.setTextColor(...MUTED);
+  const fecha = new Date().toLocaleDateString("es-CL",{day:"2-digit",month:"long",year:"numeric"});
+  const all = SECCIONES.flatMap(s=>s.questions);
+  const done = all.filter(isQuestionAnswered).length;
+  doc.text(`Fecha de emisión: ${fecha}`, M, y); y+=16;
+  doc.text(`Preguntas respondidas: ${done} de ${all.length}  (${Math.round(done/all.length*100)}%)`, M, y); y+=16;
+  doc.text(`Total de secciones: ${SECCIONES.length}`, M, y); y+=30;
+
+  // Índice
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(12);
+  doc.setTextColor(...DARK);
+  doc.text("Índice de secciones", M, y);
+  y += 6;
+  doc.line(M, y, W-M, y);
+  y += 18;
+
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(10);
+  doc.setTextColor(...DARK);
+  SECCIONES.forEach((s,i) => {
+    if (y > H-70) { doc.addPage(); y = 60; }
+    doc.setTextColor(...BRAND);
+    doc.text(`${(i+1).toString().padStart(2,"0")}.`, M, y);
+    doc.setTextColor(...DARK);
+    doc.text(s.title, M+28, y);
+    y += 16;
+  });
+
+  // ============ RESPUESTAS ============
+  const data = collectAnswers();
+  data.forEach((sec, idx) => {
+    doc.addPage();
+    y = 60;
+
+    // Header de sección
+    doc.setFillColor(...BRAND);
+    doc.rect(M-5, y-18, CW+10, 32, "F");
+    doc.setTextColor(255,255,255);
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(14);
+    doc.text(`${idx+1}. ${sec.title}`, M, y+4);
+    y += 34;
+
+    sec.questions.forEach(q => {
+      // Pregunta
+      const labelLines = doc.splitTextToSize(`${q.num}. ${q.label}`, CW);
+      const needed = labelLines.length * 14 + 8;
+      if (y + needed + 40 > H - 50) { doc.addPage(); y = 60; }
+
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...BRAND);
+      doc.text(labelLines, M, y);
+      y += labelLines.length * 13 + 4;
+
+      // Respuesta
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(10);
+      if (q.empty) {
+        doc.setTextColor(180, 180, 180);
+        doc.setFont("helvetica","italic");
+        doc.text("— Sin responder —", M+12, y);
+        y += 16;
+      } else {
+        doc.setTextColor(...DARK);
+        const ansLines = doc.splitTextToSize(q.ans, CW-12);
+        // background box
+        const boxH = ansLines.length * 13 + 8;
+        if (y + boxH > H - 50) { doc.addPage(); y = 60; }
+        doc.setFillColor(245, 247, 250);
+        doc.rect(M+6, y-10, CW-12, boxH, "F");
+        doc.setDrawColor(...ACCENT);
+        doc.setLineWidth(2);
+        doc.line(M+6, y-10, M+6, y-10+boxH);
+        doc.text(ansLines, M+14, y);
+        y += ansLines.length * 13 + 8;
+      }
+      y += 12;
+    });
+  });
+
+  // ============ FOOTER en cada página ============
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(...MUTED);
+    doc.setFont("helvetica","normal");
+    if (i > 1) {
+      doc.text(`Cuestionario de Requerimientos · Plataforma de Asesorías en Seguridad Privada`, M, H-25);
+      doc.text(`Página ${i} de ${pageCount}`, W-M, H-25, {align:"right"});
+      doc.setDrawColor(...ACCENT);
+      doc.setLineWidth(.5);
+      doc.line(M, H-35, W-M, H-35);
+    }
+  }
+
+  const filename = `Cuestionario_Requerimientos_${new Date().toISOString().slice(0,10)}.pdf`;
+  doc.save(filename);
+  toast("✓ PDF descargado correctamente");
+}
+
+// ============ INIT ============
+render();
+</script>
+</body>
+</html>
