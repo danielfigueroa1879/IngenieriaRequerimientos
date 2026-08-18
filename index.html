@@ -255,7 +255,7 @@
 
   <div class="info-note">
     <i class="fa-solid fa-circle-info"></i>
-    <b>Antes de comenzar:</b> El tiempo estimado es de 15 minutos. Los archivos adjuntos (logo, catálogos) deberán enviarse por separado — este formulario solo registra que se van a entregar.
+    <b>Antes de comenzar:</b> El tiempo estimado es de 20 minutos. Puede descargar una copia PDF para sus registros. Los archivos adjuntos (logo, catálogos, mockups) se enviarán automáticamente junto con sus respuestas al presionar <b>"Enviar respuestas"</b>.
   </div>
 
   <!-- ============== SECCIONES ============== -->
@@ -273,8 +273,11 @@
     <button class="btn-outline-brand" onclick="window.print()">
       <i class="fa-solid fa-print"></i> Imprimir
     </button>
-    <button class="btn-brand" onclick="generarPDF()">
+    <button class="btn-outline-brand" onclick="generarPDF()">
       <i class="fa-solid fa-file-pdf"></i> Descargar PDF
+    </button>
+    <button class="btn-brand" onclick="enviarRespuestas()" id="btnEnviar">
+      <i class="fa-solid fa-paper-plane"></i> Enviar respuestas
     </button>
   </div>
 </div>
@@ -282,6 +285,12 @@
 <div class="toast-msg" id="toast"></div>
 
 <script>
+// ============================================================
+// ⚙️ CONFIGURACIÓN WEB3FORMS
+// ============================================================
+const WEB3FORMS_KEY = "fc742981-4733-4049-9f91-a2a2e11672e2";
+// ============================================================
+
 // ============================================================
 // DEFINICIÓN DEL CUESTIONARIO
 // ============================================================
@@ -448,12 +457,67 @@ const SECCIONES = [
     ]
   },
   {
+    title: "Particularidades del rubro Seguridad Privada",
+    icon: "fa-user-shield",
+    questions: [
+      {id:"q47", type:"check", label:"Nivel de confidencialidad requerido para los entregables (Estudios de Seguridad, Directivas, Matrices de Riesgo):",
+        options:[
+          "Marca de agua con datos del cliente en cada página",
+          "Links de descarga con expiración (24h a 7 días)",
+          "Firma de NDA electrónico antes de descargar",
+          "Cifrado en reposo en el almacenamiento",
+          "Registro de descargas (quién, cuándo, IP)"
+        ]},
+      {id:"q48", type:"radio", label:"¿Qué nivel de verificación del comprador se necesita antes de habilitar la compra?",
+        options:[
+          "Ninguna adicional (correo + RUT auto-declarado)",
+          "Validación de RUT contra SII",
+          "Aprobación manual del admin para ciertas asesorías críticas",
+          "Verificación de representante legal para empresas (e-RUT o cédula)"
+        ]},
+      {id:"q49", type:"radio", label:"¿La asesoría debe entregarse firmada electrónicamente por el RCEP / Jefe Técnico?",
+        options:[
+          "Sí — firma electrónica simple (SES)",
+          "Sí — firma electrónica avanzada (Ley 19.799)",
+          "No es requerido",
+          "A evaluar"
+        ]},
+      {id:"q50", type:"text", label:"Nombre completo, RUT y credencial del RCEP / Jefe Técnico que firmará las asesorías."},
+      {id:"q51", type:"radio", label:"Plazo de retención legal de las asesorías emitidas (para fiscalización posterior):",
+        options:["5 años (recomendado)","10 años","Indefinido","Otro plazo"]},
+      {id:"q52", type:"radio", label:"¿El cliente debe contar con una zona segura para subir sus propios documentos previos (planos, manuales existentes, dotación actual, procedimientos)?",
+        options:[
+          "Sí — obligatorio en toda asesoría",
+          "Solo para ciertos servicios (Estudios de Seguridad, Auditorías)",
+          "No es necesario"
+        ]},
+      {id:"q53", type:"check", label:"Modelo de servicios recurrentes (además de compras únicas):",
+        options:[
+          "Retainer mensual (asesor asignado)",
+          "Auditoría anual programada",
+          "Actualización periódica de directivas",
+          "Recordatorios automáticos de vencimientos normativos",
+          "Renovación automática con cobro recurrente",
+          "No aplica — solo compras únicas"
+        ]},
+      {id:"q54", type:"check", label:"Módulo de capacitaciones (si vende cursos OS-10, reentrenamiento, actualización normativa):",
+        options:[
+          "Inscripción a cursos con cupos limitados",
+          "Control de asistencia (online / presencial)",
+          "Emisión automática de certificados con folio único",
+          "Recordatorios de renovación de acreditaciones",
+          "Evaluaciones online con nota mínima de aprobación",
+          "No aplica — no vende capacitaciones"
+        ]},
+    ]
+  },
+  {
     title: "Cierre",
     icon: "fa-flag-checkered",
     questions: [
-      {id:"q47", type:"textarea", label:"¿Existe algún requerimiento crítico o no negociable que no haya sido consultado?"},
-      {id:"q48", type:"textarea", label:"¿Algún riesgo, restricción o preocupación que debamos considerar?"},
-      {id:"q49", type:"file", label:"Puede adjuntar documentos adicionales (mockups, ejemplos, textos legales, catálogos).",
+      {id:"q55", type:"textarea", label:"¿Existe algún requerimiento crítico o no negociable que no haya sido consultado?"},
+      {id:"q56", type:"textarea", label:"¿Algún riesgo, restricción o preocupación que debamos considerar?"},
+      {id:"q57", type:"file", label:"Puede adjuntar documentos adicionales (mockups, ejemplos, textos legales, catálogos).",
         hint:"El adjunto se envía junto al PDF por separado."},
     ]
   }
@@ -765,6 +829,127 @@ function generarPDF() {
   const filename = `Cuestionario_Requerimientos_${new Date().toISOString().slice(0,10)}.pdf`;
   doc.save(filename);
   toast("✓ PDF descargado correctamente");
+}
+
+// ============================================================
+// ENVÍO WEB3FORMS
+// ============================================================
+async function enviarRespuestas() {
+  const btn = document.getElementById("btnEnviar");
+  const all = SECCIONES.flatMap(s => s.questions);
+  const done = all.filter(isQuestionAnswered).length;
+
+  // Validación mínima: al menos empresa y contacto respondidos
+  const empresa = document.getElementById("q1").value.trim();
+  const contacto = document.getElementById("q2").value.trim();
+  if (!empresa || !contacto) {
+    toast("⚠️ Complete al menos empresa (P.1) y responsable (P.2) antes de enviar", "#dc2626");
+    document.getElementById("q1").scrollIntoView({behavior:"smooth",block:"center"});
+    return;
+  }
+
+  if (done < 15) {
+    if (!confirm(`Solo has respondido ${done} de ${all.length} preguntas (${Math.round(done/all.length*100)}%). ¿Enviar de todas formas?`)) return;
+  } else if (!confirm("¿Enviar tus respuestas ahora? Después de enviar no podrás editar.")) {
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
+
+  const formData = new FormData();
+  formData.append("access_key", WEB3FORMS_KEY);
+  formData.append("subject", "🛡️ Cuestionario Plataforma Asesorías - " + (empresa.substring(0,60) || "sin empresa"));
+  formData.append("from_name", "Formulario Plataforma Asesorías");
+
+  // Detectar email del cliente en el campo contacto → usar como reply-to
+  const emailMatch = contacto.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
+  if (emailMatch) formData.append("reply_to", emailMatch[0]);
+
+  // Anti-spam
+  formData.append("botcheck", "");
+
+  // Cuerpo legible del mensaje
+  const data = collectAnswers();
+  let body = `╔══════════════════════════════════════════════╗\n`;
+  body    += `║  NUEVO CUESTIONARIO DE PLATAFORMA RECIBIDO  ║\n`;
+  body    += `╚══════════════════════════════════════════════╝\n\n`;
+  body    += `📅 Fecha: ${new Date().toLocaleString('es-CL',{dateStyle:'full',timeStyle:'short'})}\n`;
+  body    += `📊 Respondido: ${done} de ${all.length} preguntas (${Math.round(done/all.length*100)}%)\n`;
+  body    += `🏢 Empresa: ${empresa}\n`;
+  body    += `👤 Contacto: ${contacto}\n`;
+  body    += `\n${'─'.repeat(60)}\n`;
+
+  data.forEach((sec, i) => {
+    body += `\n\n▓▓▓ SECCIÓN ${i+1}: ${sec.title.toUpperCase()} ▓▓▓\n`;
+    sec.questions.forEach(q => {
+      body += `\n[Pregunta ${q.num}] ${q.label}\n`;
+      body += `➤ ${q.ans}\n`;
+    });
+  });
+  body += `\n\n${'─'.repeat(60)}\n`;
+  body += `✉️ Este mensaje fue generado automáticamente desde el formulario web.\n`;
+  formData.append("message", body);
+
+  // Adjuntar archivos (logo, catálogos, mockups)
+  let archivosAdjuntos = 0;
+  SECCIONES.forEach(sec => {
+    sec.questions.forEach(q => {
+      if (q.type === "file") {
+        const files = document.getElementById(q.id).files;
+        for (const f of files) {
+          formData.append(`archivo_${archivosAdjuntos+1}_${f.name}`, f, f.name);
+          archivosAdjuntos++;
+        }
+      }
+    });
+  });
+
+  try {
+    const res = await fetch("https://api.web3forms.com/submit", {
+      method: "POST",
+      body: formData
+    });
+    const json = await res.json();
+    if (json.success) {
+      mostrarExito(archivosAdjuntos, done, all.length);
+    } else {
+      toast("❌ Error: " + (json.message || "Falló el envío"), "#dc2626");
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar respuestas';
+    }
+  } catch (e) {
+    toast("❌ Error de conexión: " + e.message, "#dc2626");
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar respuestas';
+  }
+}
+
+function mostrarExito(numArchivos, done, total) {
+  const overlay = document.createElement("div");
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(31,58,95,.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(6px);animation:fadeIn .3s";
+  overlay.innerHTML = `
+    <style>
+      @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+      @keyframes popIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+    </style>
+    <div style="background:#fff;padding:2.4rem 2rem;border-radius:18px;max-width:520px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.35);animation:popIn .35s ease">
+      <div style="width:88px;height:88px;background:linear-gradient(135deg,#16a34a,#059669);border-radius:50%;margin:0 auto 1.3rem;display:flex;align-items:center;justify-content:center;color:#fff;font-size:2.8rem;font-weight:900;box-shadow:0 8px 24px rgba(22,163,74,.35)">✓</div>
+      <h2 style="color:#1F3A5F;margin:0 0 .8rem;font-weight:800;font-size:1.5rem">¡Respuestas enviadas!</h2>
+      <p style="color:#555;margin:0 0 1rem;line-height:1.6;font-size:.98rem">Su cuestionario fue recibido correctamente${numArchivos > 0 ? ` junto con <b>${numArchivos} archivo(s) adjunto(s)</b>` : ""}.</p>
+      <p style="color:#555;margin:0 0 1.4rem;line-height:1.6;font-size:.98rem">Nos pondremos en contacto en las próximas <b>48 horas hábiles</b> para presentarle la propuesta técnica y comercial formal.</p>
+      <div style="background:#f5f7fa;border-radius:10px;padding:.7rem;margin-bottom:1.4rem;font-size:.82rem;color:#6b7280">
+        📊 ${done}/${total} preguntas respondidas · ${numArchivos} archivo(s) adjunto(s)
+      </div>
+      <button onclick="generarPDF()" style="background:#fff;border:1.5px solid #1F3A5F;color:#1F3A5F;padding:.7rem 1.3rem;border-radius:8px;font-weight:600;cursor:pointer;margin-right:.4rem;font-size:.92rem">
+        <i class="fa-solid fa-file-pdf"></i> Descargar copia PDF
+      </button>
+      <button onclick="location.reload()" style="background:linear-gradient(135deg,#1F3A5F,#122540);border:none;color:#fff;padding:.7rem 1.3rem;border-radius:8px;font-weight:600;cursor:pointer;font-size:.92rem">
+        Cerrar
+      </button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
 }
 
 // ============ INIT ============
