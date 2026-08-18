@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cuestionario de Requerimientos — Plataforma de Asesorías en Seguridad Privada</title>
+<title>Cuestionario de Requerimientos — Proyecto Web en Seguridad Privada</title>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -152,7 +152,7 @@
   /* File */
   input[type=file]{padding:.4rem;background:#fafbfd}
 
-  /* Actions bar (sticky) */
+  /* Actions bar (sticky - solo desktop) */
   .action-bar{
     position:fixed;left:0;right:0;bottom:0;
     background:rgba(255,255,255,.96);backdrop-filter:blur(10px);
@@ -162,6 +162,34 @@
   }
   .action-bar .container{max-width:960px;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
   .action-bar .spacer{flex:1}
+
+  /* Bloque final de acciones (dentro del flujo del form) */
+  .final-actions{
+    background:linear-gradient(135deg,#f8faff,#fff);
+    border:2px solid var(--brand);
+    text-align:center;padding:2rem 1.5rem;
+  }
+  .final-actions h3{color:var(--brand);font-weight:800;font-size:1.35rem;margin:0 0 .5rem}
+  .final-actions p{color:var(--muted);margin:0 0 1.5rem;font-size:.95rem}
+  .final-actions .btn-row{display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap}
+  .final-actions .btn-brand{padding:.9rem 1.8rem;font-size:1.05rem}
+  .final-actions .btn-outline-brand,.final-actions .btn-ghost{padding:.75rem 1.2rem}
+
+  /* Flecha flotante "volver arriba" */
+  .back-to-top{
+    position:fixed;bottom:20px;right:20px;
+    width:52px;height:52px;border-radius:50%;
+    background:linear-gradient(135deg,var(--brand),var(--brand-dark));
+    color:#fff;border:none;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;box-shadow:0 6px 20px rgba(31,58,95,.35);
+    opacity:0;transform:translateY(20px) scale(.8);
+    transition:all .28s cubic-bezier(.4,0,.2,1);
+    z-index:95;font-size:1.15rem;
+  }
+  .back-to-top.show{opacity:1;transform:translateY(0) scale(1)}
+  .back-to-top:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 10px 28px rgba(31,58,95,.45)}
+  .back-to-top:active{transform:translateY(-1px) scale(.98)}
   .btn-brand{
     background:linear-gradient(135deg,var(--brand),var(--brand-dark));
     color:#fff;border:none;font-weight:600;padding:.65rem 1.4rem;border-radius:8px;
@@ -213,9 +241,13 @@
     .section-card{padding:1.2rem 1rem}
     .section-head{gap:.6rem}
     .side-nav{display:none !important}
-    .action-bar .container{justify-content:center}
-    .btn-brand,.btn-outline-brand{width:100%;justify-content:center}
-    .action-bar .spacer{display:none}
+    /* Ocultar barra sticky en móvil — se usa el bloque final */
+    .action-bar{display:none !important}
+    body{padding-bottom:20px}
+    .final-actions .btn-brand,
+    .final-actions .btn-outline-brand,
+    .final-actions .btn-ghost{width:100%;justify-content:center}
+    .back-to-top{bottom:20px;right:16px;width:48px;height:48px}
   }
 
   /* Print (fallback) */
@@ -233,7 +265,7 @@
   <div class="container">
     <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i> Cuestionario Oficial</div>
     <h1>Levantamiento de Requerimientos</h1>
-    <p>Plataforma web de asesorías en Seguridad Privada. Complete el formulario y descargue el PDF con sus respuestas para enviarlo formalmente.</p>
+    <p>Proyecto web en el rubro Seguridad Privada. Complete el formulario y descargue el PDF con sus respuestas para enviarlo formalmente.</p>
   </div>
 </header>
 
@@ -255,32 +287,52 @@
 
   <div class="info-note">
     <i class="fa-solid fa-circle-info"></i>
-    <b>Antes de comenzar:</b> El tiempo estimado es de 20 minutos. Puede descargar una copia PDF para sus registros. Los archivos adjuntos (logo, catálogos, mockups) se enviarán automáticamente junto con sus respuestas al presionar <b>"Enviar respuestas"</b>.
+    <b>Antes de comenzar:</b> El tiempo estimado es de 15 minutos. Puede descargar una copia PDF para sus registros. Los archivos adjuntos (logo, catálogos, mockups) se enviarán automáticamente junto con sus respuestas al presionar <b>"Enviar respuestas"</b>.
   </div>
 
   <!-- ============== SECCIONES ============== -->
   <div id="formRoot"></div>
 
+  <!-- ============== BLOQUE FINAL DE ACCIONES ============== -->
+  <section class="section-card final-actions">
+    <div style="font-size:2.4rem;margin-bottom:.5rem">🛡️</div>
+    <h3>¿Terminó de completar el cuestionario?</h3>
+    <p>Revise sus respuestas y envíelas cuando esté listo.<br>Podrá descargar una copia en PDF para sus registros.</p>
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="if(confirm('¿Limpiar todas las respuestas?')) location.reload()">
+        <i class="fa-solid fa-rotate-left"></i> Limpiar
+      </button>
+      <button class="btn-outline-brand" onclick="generarPDF()">
+        <i class="fa-solid fa-file-pdf"></i> Descargar PDF
+      </button>
+      <button class="btn-brand" onclick="enviarRespuestas()" id="btnEnviar">
+        <i class="fa-solid fa-paper-plane"></i> Enviar respuestas
+      </button>
+    </div>
+  </section>
+
 </main>
 
-<!-- ACTION BAR -->
+<!-- ACTION BAR (solo desktop) -->
 <div class="action-bar">
   <div class="container">
     <button class="btn-ghost" onclick="if(confirm('¿Limpiar todas las respuestas?')) location.reload()">
       <i class="fa-solid fa-rotate-left"></i> Limpiar
     </button>
     <div class="spacer"></div>
-    <button class="btn-outline-brand" onclick="window.print()">
-      <i class="fa-solid fa-print"></i> Imprimir
-    </button>
     <button class="btn-outline-brand" onclick="generarPDF()">
       <i class="fa-solid fa-file-pdf"></i> Descargar PDF
     </button>
-    <button class="btn-brand" onclick="enviarRespuestas()" id="btnEnviar">
+    <button class="btn-brand" onclick="enviarRespuestas()" id="btnEnviar2">
       <i class="fa-solid fa-paper-plane"></i> Enviar respuestas
     </button>
   </div>
 </div>
+
+<!-- FLECHA VOLVER ARRIBA -->
+<button class="back-to-top" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Volver arriba">
+  <i class="fa-solid fa-arrow-up"></i>
+</button>
 
 <div class="toast-msg" id="toast"></div>
 
@@ -318,16 +370,16 @@ const SECCIONES = [
     ]
   },
   {
-    title: "Catálogo de asesorías",
+    title: "Catálogo de productos o servicios",
     icon: "fa-clipboard-list",
     questions: [
-      {id:"q8", type:"textarea", label:"Liste los tipos de asesorías que se venderán en la plataforma (una por línea).",
-        hint:"Ej: Estudio de Seguridad, Directiva de Funcionamiento, Reglamento Interno, Matriz de Riesgos, etc."},
+      {id:"q8", type:"textarea", label:"Liste los tipos de productos o servicios que se ofrecerán en la plataforma (una por línea).",
+        hint:"Ej: Asesorías, Estudios de Seguridad, Cursos OS-10, Inscripciones, Auditorías, Venta de equipos, etc."},
       {id:"q9", type:"radio", label:"¿Los precios serán fijos, a cotizar o mixtos?",
         options:["Todos precio fijo","Todos a cotizar","Mixto"]},
-      {id:"q10", type:"radio", label:"¿Cada asesoría es un entregable digital (PDF), un servicio agendado (reunión/visita) o ambos?",
+      {id:"q10", type:"radio", label:"¿Cada producto/servicio es un entregable digital (PDF, curso online), un servicio agendado (reunión/visita) o ambos?",
         options:["Digital","Agendado","Ambos"]},
-      {id:"q11", type:"text", label:"Plazo típico de entrega de una asesoría."},
+      {id:"q11", type:"text", label:"Plazo típico de entrega."},
       {id:"q12", type:"radio", label:"¿Ofrecerá planes o paquetes recurrentes (mensual/anual)?",
         options:["Sí","No","A evaluar"]},
     ]
@@ -348,10 +400,10 @@ const SECCIONES = [
     title: "Flujo de compra y entrega",
     icon: "fa-cart-shopping",
     questions: [
-      {id:"q16", type:"textarea", label:"Describa el flujo ideal: desde que el cliente entra a la web hasta que recibe la asesoría."},
+      {id:"q16", type:"textarea", label:"Describa el flujo ideal: desde que el cliente entra a la web hasta que recibe su producto o servicio."},
       {id:"q17", type:"check", label:"Tras el pago, el sistema debe:",
-        options:["Entregar el documento automáticamente (descarga PDF)","Enviar correo con link de descarga","Notificar al asesor para contactar al cliente","Generar cita en calendario (Zoom / Meet / presencial)","Emitir boleta o factura electrónica"]},
-      {id:"q18", type:"radio", label:"¿El cliente debe poder ver el estado de su asesoría (en proceso, entregada, revisión)?",
+        options:["Entregar el documento/producto automáticamente (descarga)","Enviar correo con link de descarga o acceso","Notificar al responsable para contactar al cliente","Generar cita en calendario (Zoom / Meet / presencial)","Emitir boleta o factura electrónica"]},
+      {id:"q18", type:"radio", label:"¿El cliente debe poder ver el estado de su compra (en proceso, entregada, revisión)?",
         options:["Sí","No","A futuro"]},
     ]
   },
@@ -375,7 +427,7 @@ const SECCIONES = [
       {id:"q24", type:"radio", label:"¿Cuenta con textos legales propios (Términos y Condiciones, Política de Cookies) o deben ser redactados?",
         options:["Textos propios","Redactarlos","Mixto"]},
       {id:"q25", type:"text", label:"¿La empresa tiene encargado de datos personales (DPO) designado? Indique nombre."},
-      {id:"q26", type:"radio", label:"¿La plataforma publicará normativa (Ley 21.659, DS 867, DTO 93, etc.) como material de valor?",
+      {id:"q26", type:"radio", label:"¿La plataforma publicará normativa vigente del rubro (Ley 21.659, DS 867, DTO 93, etc.) como material de valor?",
         options:["Sí","No","A futuro"]},
     ]
   },
@@ -396,7 +448,7 @@ const SECCIONES = [
     icon: "fa-layer-group",
     questions: [
       {id:"q31", type:"check", label:"Marque las secciones que debe tener la web:",
-        options:["Inicio / Home","Quiénes somos","Catálogo de asesorías + detalle","Carrito y checkout","Área privada del cliente (Mi Cuenta)","Blog / Noticias normativas","Preguntas frecuentes (FAQ)","Contacto / Cotización","Panel de administración"]},
+        options:["Inicio / Home","Quiénes somos","Catálogo de productos/servicios + detalle","Carrito y checkout","Área privada del cliente (Mi Cuenta)","Blog / Noticias normativas","Preguntas frecuentes (FAQ)","Contacto / Cotización","Panel de administración"]},
       {id:"q32", type:"radio", label:"¿Quién generará los contenidos textuales (descripciones, blog, FAQ)?",
         options:["El cliente","Nosotros (desarrollador)","Mixto"]},
     ]
@@ -453,71 +505,16 @@ const SECCIONES = [
       {id:"q45", type:"radio", label:"Rango de presupuesto disponible:",
         options:["Menos de $1.000.000 CLP","$1.000.000 – $2.500.000","$2.500.000 – $5.000.000","Más de $5.000.000","Prefiero conversarlo"]},
       {id:"q46", type:"scale", label:"Prioridad de cada función (1 = nada importante, 5 = crítico):",
-        items:["Catálogo de asesorías","Pago online","Facturación electrónica automática","Área privada del cliente","Agendamiento de reuniones","Blog / noticias normativas"]},
-    ]
-  },
-  {
-    title: "Particularidades del rubro Seguridad Privada",
-    icon: "fa-user-shield",
-    questions: [
-      {id:"q47", type:"check", label:"Nivel de confidencialidad requerido para los entregables (Estudios de Seguridad, Directivas, Matrices de Riesgo):",
-        options:[
-          "Marca de agua con datos del cliente en cada página",
-          "Links de descarga con expiración (24h a 7 días)",
-          "Firma de NDA electrónico antes de descargar",
-          "Cifrado en reposo en el almacenamiento",
-          "Registro de descargas (quién, cuándo, IP)"
-        ]},
-      {id:"q48", type:"radio", label:"¿Qué nivel de verificación del comprador se necesita antes de habilitar la compra?",
-        options:[
-          "Ninguna adicional (correo + RUT auto-declarado)",
-          "Validación de RUT contra SII",
-          "Aprobación manual del admin para ciertas asesorías críticas",
-          "Verificación de representante legal para empresas (e-RUT o cédula)"
-        ]},
-      {id:"q49", type:"radio", label:"¿La asesoría debe entregarse firmada electrónicamente por el RCEP / Jefe Técnico?",
-        options:[
-          "Sí — firma electrónica simple (SES)",
-          "Sí — firma electrónica avanzada (Ley 19.799)",
-          "No es requerido",
-          "A evaluar"
-        ]},
-      {id:"q50", type:"text", label:"Nombre completo, RUT y credencial del RCEP / Jefe Técnico que firmará las asesorías."},
-      {id:"q51", type:"radio", label:"Plazo de retención legal de las asesorías emitidas (para fiscalización posterior):",
-        options:["5 años (recomendado)","10 años","Indefinido","Otro plazo"]},
-      {id:"q52", type:"radio", label:"¿El cliente debe contar con una zona segura para subir sus propios documentos previos (planos, manuales existentes, dotación actual, procedimientos)?",
-        options:[
-          "Sí — obligatorio en toda asesoría",
-          "Solo para ciertos servicios (Estudios de Seguridad, Auditorías)",
-          "No es necesario"
-        ]},
-      {id:"q53", type:"check", label:"Modelo de servicios recurrentes (además de compras únicas):",
-        options:[
-          "Retainer mensual (asesor asignado)",
-          "Auditoría anual programada",
-          "Actualización periódica de directivas",
-          "Recordatorios automáticos de vencimientos normativos",
-          "Renovación automática con cobro recurrente",
-          "No aplica — solo compras únicas"
-        ]},
-      {id:"q54", type:"check", label:"Módulo de capacitaciones (si vende cursos OS-10, reentrenamiento, actualización normativa):",
-        options:[
-          "Inscripción a cursos con cupos limitados",
-          "Control de asistencia (online / presencial)",
-          "Emisión automática de certificados con folio único",
-          "Recordatorios de renovación de acreditaciones",
-          "Evaluaciones online con nota mínima de aprobación",
-          "No aplica — no vende capacitaciones"
-        ]},
+        items:["Catálogo de productos/servicios","Pago online","Facturación electrónica automática","Área privada del cliente","Agendamiento de reuniones","Blog / noticias normativas"]},
     ]
   },
   {
     title: "Cierre",
     icon: "fa-flag-checkered",
     questions: [
-      {id:"q55", type:"textarea", label:"¿Existe algún requerimiento crítico o no negociable que no haya sido consultado?"},
-      {id:"q56", type:"textarea", label:"¿Algún riesgo, restricción o preocupación que debamos considerar?"},
-      {id:"q57", type:"file", label:"Puede adjuntar documentos adicionales (mockups, ejemplos, textos legales, catálogos).",
+      {id:"q47", type:"textarea", label:"¿Existe algún requerimiento crítico o no negociable que no haya sido consultado?"},
+      {id:"q48", type:"textarea", label:"¿Algún riesgo, restricción o preocupación que debamos considerar?"},
+      {id:"q49", type:"file", label:"Puede adjuntar documentos adicionales (mockups, ejemplos, textos legales, catálogos).",
         hint:"El adjunto se envía junto al PDF por separado."},
     ]
   }
@@ -706,13 +703,13 @@ function generarPDF() {
   doc.setTextColor(255,255,255);
   doc.setFont("helvetica","bold");
   doc.setFontSize(11);
-  doc.text("CUESTIONARIO DE REQUERIMIENTOS", W/2, 65, {align:"center"});
+  doc.text("CUESTIONARIO DE REQUERIMIENTOS", W/2, 75, {align:"center"});
   doc.setFontSize(22);
-  doc.text("Plataforma web de asesorías", W/2, 100, {align:"center"});
-  doc.text("en Seguridad Privada", W/2, 128, {align:"center"});
+  doc.text("Proyecto Web", W/2, 110, {align:"center"});
+  doc.text("en Seguridad Privada", W/2, 138, {align:"center"});
   doc.setFont("helvetica","normal");
   doc.setFontSize(10);
-  doc.text("Respuestas del cliente", W/2, 155, {align:"center"});
+  doc.text("Respuestas del cliente", W/2, 162, {align:"center"});
 
   // Meta info
   let y = 230;
@@ -818,7 +815,7 @@ function generarPDF() {
     doc.setTextColor(...MUTED);
     doc.setFont("helvetica","normal");
     if (i > 1) {
-      doc.text(`Cuestionario de Requerimientos · Plataforma de Asesorías en Seguridad Privada`, M, H-25);
+      doc.text(`Cuestionario de Requerimientos · Proyecto Web en Seguridad Privada`, M, H-25);
       doc.text(`Página ${i} de ${pageCount}`, W-M, H-25, {align:"right"});
       doc.setDrawColor(...ACCENT);
       doc.setLineWidth(.5);
@@ -834,8 +831,16 @@ function generarPDF() {
 // ============================================================
 // ENVÍO WEB3FORMS
 // ============================================================
+function setBtnEnviarState(loading) {
+  document.querySelectorAll("#btnEnviar, #btnEnviar2").forEach(b => {
+    b.disabled = loading;
+    b.innerHTML = loading
+      ? '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...'
+      : '<i class="fa-solid fa-paper-plane"></i> Enviar respuestas';
+  });
+}
+
 async function enviarRespuestas() {
-  const btn = document.getElementById("btnEnviar");
   const all = SECCIONES.flatMap(s => s.questions);
   const done = all.filter(isQuestionAnswered).length;
 
@@ -854,41 +859,48 @@ async function enviarRespuestas() {
     return;
   }
 
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
+  setBtnEnviarState(true);
 
   const formData = new FormData();
   formData.append("access_key", WEB3FORMS_KEY);
-  formData.append("subject", "🛡️ Cuestionario Plataforma Asesorías - " + (empresa.substring(0,60) || "sin empresa"));
-  formData.append("from_name", "Formulario Plataforma Asesorías");
+  formData.append("subject", "Cuestionario Web Seguridad Privada - " + (empresa.substring(0,80) || "sin empresa"));
+  formData.append("from_name", empresa.substring(0,60) || "Formulario Web");
 
   // Detectar email del cliente en el campo contacto → usar como reply-to
   const emailMatch = contacto.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
   if (emailMatch) formData.append("reply_to", emailMatch[0]);
-
-  // Anti-spam
   formData.append("botcheck", "");
 
-  // Cuerpo legible del mensaje
+  // Cuerpo limpio y legible en cualquier cliente de correo
   const data = collectAnswers();
-  let body = `╔══════════════════════════════════════════════╗\n`;
-  body    += `║  NUEVO CUESTIONARIO DE PLATAFORMA RECIBIDO  ║\n`;
-  body    += `╚══════════════════════════════════════════════╝\n\n`;
-  body    += `📅 Fecha: ${new Date().toLocaleString('es-CL',{dateStyle:'full',timeStyle:'short'})}\n`;
-  body    += `📊 Respondido: ${done} de ${all.length} preguntas (${Math.round(done/all.length*100)}%)\n`;
-  body    += `🏢 Empresa: ${empresa}\n`;
-  body    += `👤 Contacto: ${contacto}\n`;
-  body    += `\n${'─'.repeat(60)}\n`;
+  const linea = "=".repeat(52);
+  const subLinea = "-".repeat(52);
+
+  let body = `${linea}\n`;
+  body += `   NUEVO CUESTIONARIO DE REQUERIMIENTOS\n`;
+  body += `${linea}\n\n`;
+  body += `Fecha:     ${new Date().toLocaleString('es-CL',{dateStyle:'long',timeStyle:'short'})}\n`;
+  body += `Empresa:   ${empresa}\n`;
+  body += `Contacto:  ${contacto}\n`;
+  body += `Progreso:  ${done} de ${all.length} preguntas (${Math.round(done/all.length*100)}%)\n\n`;
 
   data.forEach((sec, i) => {
-    body += `\n\n▓▓▓ SECCIÓN ${i+1}: ${sec.title.toUpperCase()} ▓▓▓\n`;
+    body += `\n${linea}\n`;
+    body += `SECCION ${i+1}: ${sec.title.toUpperCase()}\n`;
+    body += `${linea}\n`;
     sec.questions.forEach(q => {
-      body += `\n[Pregunta ${q.num}] ${q.label}\n`;
-      body += `➤ ${q.ans}\n`;
+      body += `\n${q.num}. ${q.label}\n`;
+      body += `${subLinea}\n`;
+      body += `${q.ans}\n`;
     });
+    body += `\n`;
   });
-  body += `\n\n${'─'.repeat(60)}\n`;
-  body += `✉️ Este mensaje fue generado automáticamente desde el formulario web.\n`;
+
+  body += `\n${linea}\n`;
+  body += `Enviado desde el formulario web de levantamiento\n`;
+  body += `de requerimientos.\n`;
+  body += `${linea}\n`;
+
   formData.append("message", body);
 
   // Adjuntar archivos (logo, catálogos, mockups)
@@ -915,13 +927,11 @@ async function enviarRespuestas() {
       mostrarExito(archivosAdjuntos, done, all.length);
     } else {
       toast("❌ Error: " + (json.message || "Falló el envío"), "#dc2626");
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar respuestas';
+      setBtnEnviarState(false);
     }
   } catch (e) {
     toast("❌ Error de conexión: " + e.message, "#dc2626");
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar respuestas';
+    setBtnEnviarState(false);
   }
 }
 
@@ -937,7 +947,7 @@ function mostrarExito(numArchivos, done, total) {
       <div style="width:88px;height:88px;background:linear-gradient(135deg,#16a34a,#059669);border-radius:50%;margin:0 auto 1.3rem;display:flex;align-items:center;justify-content:center;color:#fff;font-size:2.8rem;font-weight:900;box-shadow:0 8px 24px rgba(22,163,74,.35)">✓</div>
       <h2 style="color:#1F3A5F;margin:0 0 .8rem;font-weight:800;font-size:1.5rem">¡Respuestas enviadas!</h2>
       <p style="color:#555;margin:0 0 1rem;line-height:1.6;font-size:.98rem">Su cuestionario fue recibido correctamente${numArchivos > 0 ? ` junto con <b>${numArchivos} archivo(s) adjunto(s)</b>` : ""}.</p>
-      <p style="color:#555;margin:0 0 1.4rem;line-height:1.6;font-size:.98rem">Nos pondremos en contacto en las próximas <b>48 horas hábiles</b> para presentarle la propuesta técnica y comercial formal.</p>
+      <p style="color:#555;margin:0 0 1.4rem;line-height:1.6;font-size:.98rem">Nos pondremos en contacto en las próximas <b>48 horas hábiles</b> para presentarle la propuesta técnica y comercial formal de su proyecto web.</p>
       <div style="background:#f5f7fa;border-radius:10px;padding:.7rem;margin-bottom:1.4rem;font-size:.82rem;color:#6b7280">
         📊 ${done}/${total} preguntas respondidas · ${numArchivos} archivo(s) adjunto(s)
       </div>
@@ -951,6 +961,12 @@ function mostrarExito(numArchivos, done, total) {
   `;
   document.body.appendChild(overlay);
 }
+
+// ============ FLECHA VOLVER ARRIBA ============
+window.addEventListener("scroll", () => {
+  const btn = document.getElementById("backTop");
+  if (btn) btn.classList.toggle("show", window.scrollY > 300);
+}, {passive:true});
 
 // ============ INIT ============
 render();
