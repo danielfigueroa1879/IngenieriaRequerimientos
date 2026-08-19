@@ -175,7 +175,19 @@
   }
 
   /* File */
-  input[type=file]{padding:.4rem;background:#fafbfd}
+  input[type=file]{
+    padding:.6rem;
+    background:#e2e8f0;
+    border:2px dashed #cbd5e1;
+    border-radius:8px;
+    cursor:pointer;
+    width:100%;
+    transition:all .2s ease;
+  }
+  input[type=file]:hover{
+    background:#cbd5e1;
+    border-color:var(--brand);
+  }
 
   /* Actions bar (sticky - solo desktop) */
   .action-bar{
