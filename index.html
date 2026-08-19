@@ -285,6 +285,17 @@
 </head>
 <body>
 
+<!-- Formulario oculto para que Netlify detecte los campos y envíe la notificación por correo -->
+<form name="cuestionario-seguridad" data-netlify="true" hidden>
+  <input type="text" name="empresa">
+  <input type="text" name="contacto">
+  <input type="text" name="progreso">
+  <textarea name="archivos"></textarea>
+  <textarea name="detalle_cuestionario"></textarea>
+</form>
+
+<!-- Netlify Forms REEMPLAZADO por Supabase — ver JS de configuración abajo -->
+
 <!-- HEADER -->
 <header class="app-header">
   <div class="container">
@@ -312,7 +323,7 @@
 
   <div class="info-note">
     <i class="fa-solid fa-circle-info"></i>
-    <b>Antes de comenzar:</b> El tiempo estimado es de 15 minutos. Puede descargar una copia PDF para sus registros. Los archivos adjuntos (logo, catálogos, mockups) se enviarán automáticamente junto con sus respuestas al presionar <b>"Enviar respuestas"</b>.
+    <b>Antes de comenzar:</b> El tiempo estimado es de 15 minutos. Puede descargar una copia PDF para sus registros. Los archivos que adjunte (logo, catálogos, mockups — hasta 10 MB cada uno) se envían automáticamente junto con sus respuestas al presionar <b>"Enviar respuestas"</b>.
   </div>
 
   <!-- ============== SECCIONES ============== -->
@@ -363,10 +374,58 @@
 
 <script>
 // ============================================================
-// ⚙️ CONFIGURACIÓN WEB3FORMS
+// ⚙️ CONFIGURACIÓN SUPABASE — REEMPLAZAR CON TUS VALORES
 // ============================================================
-const WEB3FORMS_KEY = "fc742981-4733-4049-9f91-a2a2e11672e2";
+// 1. Crea un proyecto en https://supabase.com (gratis)
+// 2. Ejecuta el SQL de migración (archivo aparte)
+// 3. Copia URL y anon key desde Project Settings > API
+// 4. Pega los valores aquí abajo:
+const SUPABASE_URL      = "https://sveqmenoepycqwllkzdp.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN2ZXFtZW5vZXB5Y3F3bGxremRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwOTY0NDksImV4cCI6MjEwMjY3MjQ0OX0.2BjmstIdTnubc2h2ksvJ1vtZAq6SEHm383jbnTReEZc";
+const STORAGE_BUCKET    = "cuestionarios-archivos";
+const TABLA_DESTINO     = "cuestionarios";
 // ============================================================
+
+// Supabase se carga de forma PEREZOSA (solo al enviar), para que el formulario
+// se renderice siempre, aunque el CDN esté bloqueado por antivirus/red.
+let instanciaSupabase = null;
+
+function cargarLibreriaSupabase() {
+  // Rutas UMD (definen window.supabase.createClient). Prueba varias por si una falla.
+  const CDNS = [
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js",
+    "https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js",
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"
+  ];
+  return new Promise((resolve, reject) => {
+    if (window.supabase && window.supabase.createClient) return resolve();
+    let i = 0;
+    function intentar() {
+      if (i >= CDNS.length) {
+        return reject(new Error("No se pudo cargar la librería de Supabase desde ningún CDN. Verifique su conexión a internet."));
+      }
+      const s = document.createElement("script");
+      s.src = CDNS[i++];
+      s.onload = () => {
+        if (window.supabase && window.supabase.createClient) resolve();
+        else intentar(); // cargó pero no sirvió → probar siguiente
+      };
+      s.onerror = () => intentar(); // falló → probar siguiente
+      document.head.appendChild(s);
+    }
+    intentar();
+  });
+}
+
+async function obtenerCliente() {
+  if (instanciaSupabase) return instanciaSupabase;
+  if (!SUPABASE_URL || SUPABASE_URL.includes("PEGA_AQUI")) {
+    throw new Error("Falta configurar SUPABASE_URL y SUPABASE_ANON_KEY en el HTML.");
+  }
+  await cargarLibreriaSupabase();
+  instanciaSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return instanciaSupabase;
+}
 
 // ============================================================
 // DEFINICIÓN DEL CUESTIONARIO
@@ -381,7 +440,7 @@ const SECCIONES = [
       {id:"q3", type:"radio", label:"¿La empresa cuenta con autorización vigente ante la autoridad fiscalizadora (OS-10 Carabineros / DGTM según corresponda)?",
         options:["Sí","No","En trámite","No aplica"]},
       {id:"q4", type:"file", label:"Adjunte logotipo en alta resolución y manual de marca (si lo posee).",
-        hint:"El adjunto se envía junto al PDF por separado."},
+        hint:"Máximo 10 MB por archivo. Se subirá automáticamente al enviar el cuestionario."},
     ]
   },
   {
@@ -540,7 +599,7 @@ const SECCIONES = [
       {id:"q47", type:"textarea", label:"¿Existe algún requerimiento crítico o no negociable que no haya sido consultado?"},
       {id:"q48", type:"textarea", label:"¿Algún riesgo, restricción o preocupación que debamos considerar?"},
       {id:"q49", type:"file", label:"Puede adjuntar documentos adicionales (mockups, ejemplos, textos legales, catálogos).",
-        hint:"El adjunto se envía junto al PDF por separado."},
+        hint:"Máximo 10 MB por archivo. Se subirán automáticamente al enviar el cuestionario."},
     ]
   }
 ];
@@ -698,7 +757,7 @@ function collectAnswers() {
           return `• ${it}: ${sel ? sel.value+"/5" : "—"}`;
         }).join("\n");
       }
-      secQuestions.push({num:n++, label:q.label, ans: ans || "— Sin responder —", empty: !ans});
+      secQuestions.push({id:q.id, num:n++, label:q.label, ans: ans || "— Sin responder —", empty: !ans});
     });
     out.push({title: sec.title, questions: secQuestions});
   });
@@ -886,95 +945,145 @@ async function enviarRespuestas() {
 
   setBtnEnviarState(true);
 
-  const formData = new FormData();
-  formData.append("access_key", WEB3FORMS_KEY);
-  formData.append("subject", "Cuestionario Web Seguridad Privada - " + (empresa.substring(0,80) || "sin empresa"));
-  formData.append("from_name", empresa.substring(0,60) || "Formulario Web");
+  // Cargar Supabase de forma perezosa (aquí sí necesitamos red)
+  let cliente;
+  try {
+    cliente = await obtenerCliente();
+  } catch (e) {
+    alert("⚠️ " + e.message);
+    setBtnEnviarState(false);
+    return;
+  }
 
-  // Detectar email del cliente en el campo contacto → usar como reply-to
-  const emailMatch = contacto.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
-  if (emailMatch) formData.append("reply_to", emailMatch[0]);
-  formData.append("botcheck", "");
-
-  // Cuerpo limpio y legible en cualquier cliente de correo
   const data = collectAnswers();
-  const linea = "=".repeat(52);
-  const subLinea = "-".repeat(52);
+  const fecha = new Date().toISOString();
+  const pct = Math.round(done/all.length*100);
 
-  let body = `${linea}\n`;
-  body += `   NUEVO CUESTIONARIO DE REQUERIMIENTOS\n`;
-  body += `${linea}\n\n`;
-  body += `Fecha:     ${new Date().toLocaleString('es-CL',{dateStyle:'long',timeStyle:'short'})}\n`;
-  body += `Empresa:   ${empresa}\n`;
-  body += `Contacto:  ${contacto}\n`;
-  body += `Progreso:  ${done} de ${all.length} preguntas (${Math.round(done/all.length*100)}%)\n\n`;
-
-  data.forEach((sec, i) => {
-    body += `\n${linea}\n`;
-    body += `SECCION ${i+1}: ${sec.title.toUpperCase()}\n`;
-    body += `${linea}\n`;
-    sec.questions.forEach(q => {
-      body += `\n${q.num}. ${q.label}\n`;
-      body += `${subLinea}\n`;
-      body += `${q.ans}\n`;
-    });
-    body += `\n`;
-  });
-
-  body += `\n${linea}\n`;
-  body += `Enviado desde el formulario web de levantamiento\n`;
-  body += `de requerimientos.\n`;
-  body += `${linea}\n`;
-
-  formData.append("message", body);
-
-  // Adjuntar archivos (logo, catálogos, mockups)
-  let archivosAdjuntos = 0;
-  SECCIONES.forEach(sec => {
-    sec.questions.forEach(q => {
-      if (q.type === "file") {
-        const files = document.getElementById(q.id).files;
-        for (const f of files) {
-          formData.append(`archivo_${archivosAdjuntos+1}_${f.name}`, f, f.name);
-          archivosAdjuntos++;
-        }
-      }
-    });
-  });
+  // Estructurar respuestas como JSON limpio y consultable en Supabase
+  const respuestasJSON = {
+    fecha_envio: fecha,
+    total_respondidas: done,
+    total_preguntas: all.length,
+    porcentaje: pct,
+    secciones: data.map((sec, i) => ({
+      numero: i + 1,
+      titulo: sec.title,
+      preguntas: sec.questions.map(q => ({
+        num: q.num,
+        pregunta: q.label,
+        tipo: SECCIONES.flatMap(s => s.questions).find(x => x.id === q.id.replace(/^q/, 'q'))?.type || 'text',
+        respuesta: q.empty ? null : q.ans
+      }))
+    }))
+  };
 
   try {
-    const res = await fetch("https://api.web3forms.com/submit", {
-      method: "POST",
-      body: formData
-    });
-    const json = await res.json();
-    if (json.success) {
-      mostrarExito(archivosAdjuntos, done, all.length);
-    } else {
-      toast("❌ Error: " + (json.message || "Falló el envío"), "#dc2626");
-      setBtnEnviarState(false);
+    // 1. Subir archivos al Storage bucket
+    const archivosSubidos = [];
+    for (const sec of SECCIONES) {
+      for (const q of sec.questions) {
+        if (q.type === "file") {
+          const files = document.getElementById(q.id).files;
+          for (const f of files) {
+            if (f.size > 50 * 1024 * 1024) {
+              alert(`⚠️ "${f.name}" pesa ${(f.size/1024/1024).toFixed(1)} MB y supera 50 MB. No se subirá.`);
+              continue;
+            }
+            const timestamp = Date.now();
+            const safeName = f.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const path = `${empresa.substring(0,30).replace(/[^a-zA-Z0-9]/g,'_')}/${timestamp}_${safeName}`;
+            const { data: upData, error: upErr } = await cliente.storage
+              .from(STORAGE_BUCKET)
+              .upload(path, f, { cacheControl: '3600', upsert: false });
+            if (upErr) {
+              console.error("Error subiendo", f.name, upErr);
+              continue;
+            }
+            const { data: urlData } = cliente.storage
+              .from(STORAGE_BUCKET)
+              .getPublicUrl(path);
+            const qInfo = data.flatMap(s => s.questions).find(x => x.id === q.id);
+            archivosSubidos.push({
+              pregunta: qInfo ? qInfo.num : "",
+              nombre_original: f.name,
+              url: urlData.publicUrl,
+              tamaño_kb: Math.round(f.size / 1024),
+              tipo: f.type
+            });
+          }
+        }
+      }
     }
+
+    // 2. Insertar registro en la tabla
+    const { error: insertErr } = await cliente
+      .from(TABLA_DESTINO)
+      .insert({
+        empresa: empresa,
+        contacto: contacto,
+        progreso: `${done} de ${all.length} preguntas (${pct}%)`,
+        respuestas: respuestasJSON,
+        archivos: archivosSubidos
+      });
+
+    if (insertErr) {
+      toast("❌ Error al guardar: " + insertErr.message, "#dc2626");
+      console.error(insertErr);
+      setBtnEnviarState(false);
+      return;
+    }
+
+    // 3. Enviar notificación a Netlify Forms en segundo plano para activar el correo
+    try {
+      const linksArchivos = archivosSubidos.map(a => `P.${a.pregunta} (${a.nombre_original}): ${a.url}`).join("\n");
+      
+      const detalleRespuestas = respuestasJSON.secciones.map(sec => {
+        const preguntasStr = sec.preguntas
+          .map(q => `**P.${q.num}. ${q.pregunta}**\nR: ${q.respuesta || "— Sin responder —"}`)
+          .join("\n\n");
+        return `**[SECCIÓN ${sec.numero}] ${sec.titulo}**\n-------------------------\n${preguntasStr}`;
+      }).join("\n\n=========================================\n\n");
+
+      await fetch("/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          "form-name": "cuestionario-seguridad",
+          "empresa": empresa,
+          "contacto": contacto,
+          "progreso": `${done} de ${all.length} preguntas (${pct}%)`,
+          "archivos": linksArchivos || "Ninguno",
+          "detalle_cuestionario": detalleRespuestas
+        }).toString()
+      });
+    } catch (netErr) {
+      console.warn("No se pudo enviar la notificación a Netlify:", netErr);
+    }
+
+    mostrarExito(archivosSubidos.length, done, all.length);
   } catch (e) {
-    toast("❌ Error de conexión: " + e.message, "#dc2626");
+    toast("❌ Error: " + e.message, "#dc2626");
+    console.error(e);
     setBtnEnviarState(false);
   }
 }
 
 function mostrarExito(numArchivos, done, total) {
   const overlay = document.createElement("div");
-  overlay.style.cssText = "position:fixed;inset:0;background:rgba(31,58,95,.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(6px);animation:fadeIn .3s";
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(31,58,95,.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(6px);animation:fadeIn .3s;overflow-y:auto";
+
   overlay.innerHTML = `
     <style>
       @keyframes fadeIn{from{opacity:0}to{opacity:1}}
       @keyframes popIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
     </style>
-    <div style="background:#fff;padding:2.4rem 2rem;border-radius:18px;max-width:520px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.35);animation:popIn .35s ease">
+    <div style="background:#fff;padding:2.4rem 2rem;border-radius:18px;max-width:520px;width:100%;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.35);animation:popIn .35s ease;margin:1rem auto">
       <div style="width:88px;height:88px;background:linear-gradient(135deg,#16a34a,#059669);border-radius:50%;margin:0 auto 1.3rem;display:flex;align-items:center;justify-content:center;color:#fff;font-size:2.8rem;font-weight:900;box-shadow:0 8px 24px rgba(22,163,74,.35)">✓</div>
       <h2 style="color:#1F3A5F;margin:0 0 .8rem;font-weight:800;font-size:1.5rem">¡Respuestas enviadas!</h2>
-      <p style="color:#555;margin:0 0 1rem;line-height:1.6;font-size:.98rem">Su cuestionario fue recibido correctamente${numArchivos > 0 ? ` junto con <b>${numArchivos} archivo(s) adjunto(s)</b>` : ""}.</p>
-      <p style="color:#555;margin:0 0 1.4rem;line-height:1.6;font-size:.98rem">Nos pondremos en contacto en las próximas <b>48 horas hábiles</b> para presentarle la propuesta técnica y comercial formal de su proyecto web.</p>
+      <p style="color:#555;margin:0 0 1rem;line-height:1.6;font-size:.98rem">Su cuestionario y ${numArchivos > 0 ? `<b>${numArchivos} archivo(s) adjunto(s)</b> fueron recibidos` : "fue recibido"} correctamente.</p>
+      <p style="color:#555;margin:0 0 1.4rem;line-height:1.6;font-size:.98rem">Nos pondremos en contacto en las próximas <b>48 horas hábiles</b> para presentarle la propuesta técnica y comercial formal.</p>
       <div style="background:#f5f7fa;border-radius:10px;padding:.7rem;margin-bottom:1.4rem;font-size:.82rem;color:#6b7280">
-        📊 ${done}/${total} preguntas respondidas · ${numArchivos} archivo(s) adjunto(s)
+        📊 ${done}/${total} preguntas respondidas${numArchivos>0?` · 📎 ${numArchivos} archivo(s) adjunto(s)`:""}
       </div>
       <button onclick="generarPDF()" style="background:#fff;border:1.5px solid #1F3A5F;color:#1F3A5F;padding:.7rem 1.3rem;border-radius:8px;font-weight:600;cursor:pointer;margin-right:.4rem;font-size:.92rem">
         <i class="fa-solid fa-file-pdf"></i> Descargar copia PDF
@@ -1019,8 +1128,28 @@ function activarObserverSecciones() {
 }
 
 // ============ INIT ============
-render();
-activarObserverSecciones();
+function iniciarFormulario() {
+  try {
+    render();
+    activarObserverSecciones();
+    console.log("✅ Formulario renderizado: " + SECCIONES.length + " secciones");
+  } catch (err) {
+    console.error("❌ Error al renderizar:", err);
+    var root = document.getElementById("formRoot");
+    if (root) {
+      root.innerHTML = '<div style="background:#fee;border:2px solid #dc2626;border-radius:10px;padding:1.5rem;color:#991b1b;font-weight:600">' +
+        '⚠️ Error al cargar las preguntas: ' + err.message +
+        '<br><br>Por favor recargue la página (Ctrl+Shift+R) o ábrala en Chrome/Firefox actualizado.</div>';
+    }
+  }
+}
+
+// Ejecutar cuando el DOM esté completamente listo (más robusto)
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", iniciarFormulario);
+} else {
+  iniciarFormulario();
+}
 </script>
 </body>
 </html>
